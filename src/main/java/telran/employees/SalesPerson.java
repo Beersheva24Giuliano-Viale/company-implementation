@@ -1,0 +1,31 @@
+package telran.employees;
+
+import org.json.JSONObject;
+
+public class SalesPerson extends WageEmployee{
+    private float percent;
+    private long sales; 
+    public SalesPerson(){}
+    public SalesPerson(long id, int basicSalary, String department, int wage, int hours,
+     float percent, long sales) {
+        super(id, basicSalary, department, wage, hours);
+        this.percent = percent;
+        this.sales = sales;
+     }
+     @Override
+     public int computeSalary() {
+        return (int) (super.computeSalary() + sales * percent / 100);
+     }
+     @Override
+     protected void fillJSON(JSONObject jsonObj) {
+        super.fillJSON(jsonObj); // Llama a fillJSON de WageEmployee para incluir sus propiedades
+        jsonObj.put("percent", percent);
+        jsonObj.put("sales", sales);
+    }
+     @Override
+     protected void setObject(JSONObject jsonObj) {
+        super.setObject(jsonObj); // Llama a setObject de WageEmployee para configurar sus propiedades
+        this.percent = jsonObj.getFloat("percent");
+        this.sales = jsonObj.getLong("sales");
+    }
+}
