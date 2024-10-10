@@ -1,12 +1,14 @@
 package telran.employees;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.UncheckedIOException;
 import java.util.*;
+
+import org.json.JSONObject;
 
 import telran.io.Persistable;
 
@@ -108,25 +110,53 @@ private class CompanyIterator implements Iterator<Employee> {
     }
 
    @Override
-    public void saveToFile(String fileName) {
-    try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(fileName))) {
-        out.writeObject(employees);
-        out.writeObject(employeesDepartment);
-        out.writeObject(managersFactor);
+public void saveToFile(String fileName) {
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+        for (Employee employee : employees.values()) {
+            
+            JSONObject json = new JSONObject();
+            json.put("id", employee.getId());
+            json.put("basicSalary", employee.getBasicSalary());
+            json.put("department", employee.getDepartment());
+
+            
+            if (employee instanceof Manager manager) {
+                json.put("factor", manager.getFactor());
+            }
+            
+
+            writer.write(json.toString());
+            writer.newLine();
+        }
     } catch (IOException e) {
         throw new UncheckedIOException("Error saving company data", e);
     }
 }
-
 @Override
-@SuppressWarnings("unchecked")
 public void restoreFromFile(String fileName) {
-    try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName))) {
-        employees = (TreeMap<Long, Employee>) in.readObject();
-        employeesDepartment = (HashMap<String, List<Employee>>) in.readObject();
-        managersFactor = (TreeMap<Float, List<Manager>>) in.readObject();
-    } catch (IOException | ClassNotFoundException e) {
-        throw new RuntimeException("Error restoring company data", e);
+    try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+        employees.clear();
+        employeesDepartment.clear();
+        managersFactor.clear();
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            JSONObject json = new JSONObject(line);
+            long id = json.getLong("id");
+            int basicSalary = json.getInt("basicSalary");
+            String department = json.getString("department");
+
+            Employee employee;
+            if (json.has("factor")) { // Indica que es un Manager
+                float factor = json.getFloat("factor");
+                employee = new Manager(id, basicSalary, department, factor);
+            } else {
+                employee = new Employee(id, basicSalary, department);
+            }
+            addEmployee(employee); // Agrega el empleado restaurado a la compañía
+        }
+    } catch (IOException e) {
+        throw new UncheckedIOException("Error restoring company data", e);
     }
 }
 }
